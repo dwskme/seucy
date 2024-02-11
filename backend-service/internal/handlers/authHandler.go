@@ -9,9 +9,10 @@ import (
 )
 
 type Credentials struct {
-	Identifer string `json:"identifer"`
-	Password  string `json:"password"`
+	Identifier string `json:"identifier"`
+	Password   string `json:"password"`
 }
+
 type AuthHandler struct {
 	UserService  *services.UserService
 	TokenService *services.TokenService
@@ -32,28 +33,14 @@ func NewAuthHandler(userService *services.UserService, tokenService *services.To
 }
 
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
-	// TODO: check if any token exists
-	token, err := h.TokenService.ExtractTokenFromHeader(r.Header.Get("Authorization"))
-	if err != nil {
-		jsonResponse(w, http.StatusInternalServerError, "Error extracting token")
-		return
-	}
-
-	_, err = h.TokenService.ValidateToken(token)
-	if err != nil {
-		jsonResponse(w, http.StatusUnauthorized, "Invalid or expired token")
-		return
-	}
-
 	var credentials Credentials
 	// Decode Input
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		jsonResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-
 	// check if user exists
-	userExists, err := h.AuthService.CheckUserExists(credentials.Identifer)
+	userExists, err := h.AuthService.CheckUserExists(credentials.Identifier)
 	if err != nil {
 		jsonResponse(w, http.StatusInternalServerError, "Error checking user existence")
 		return
@@ -63,12 +50,14 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.AuthService.MatchPassword(credentials.Identifer, credentials.Password)
+	matchPassword, err := h.AuthService.MatchPassword(credentials.Identifier, credentials.Password)
 	if err != nil {
 		jsonResponse(w, http.StatusInternalServerError, "Error checking password")
 		return
 	}
-
+	if !matchPassword {
+		jsonResponse(w, http.StatusUnauthorized, "Incorrect Credentials")
+	}
 	// TODO: renew the expiry token/ refresh token
 }
 

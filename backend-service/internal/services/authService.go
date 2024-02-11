@@ -26,14 +26,13 @@ func (s *AuthService) CheckUserExists(identifier string) (bool, error) {
 	return count > 0, nil
 }
 
-func (s *AuthService) MatchPassword(username, password string) (bool, error) {
+func (s *AuthService) MatchPassword(identifier, password string) (bool, error) {
 	var hashedPassword string
-	query := "SELECT password FROM users WHERE username = $1"
-	err := s.DB.QueryRow(query, username).Scan(&hashedPassword)
+	query := "SELECT password FROM users WHERE username = $1 OR email = $2"
+	err := s.DB.QueryRow(query, identifier, identifier).Scan(&hashedPassword)
 	if err != nil {
 		return false, err
 	}
-
 	return crypt.CheckPassword(password, hashedPassword) == nil, nil
 }
 
