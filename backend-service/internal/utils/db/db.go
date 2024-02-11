@@ -10,7 +10,8 @@ import (
 var DB *sql.DB
 
 func InitDB(connectionStr string) (*sql.DB, error) {
-	DB, err := sql.Open("postgres", connectionStr)
+	var err error
+	DB, err = sql.Open("postgres", connectionStr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
@@ -48,5 +49,8 @@ func ensureTableExists() error {
         );
     `
 	_, err := DB.Exec(query)
+	if err != nil {
+		fmt.Println("Error creating 'users' table:", err)
+	}
 	return err
 }
