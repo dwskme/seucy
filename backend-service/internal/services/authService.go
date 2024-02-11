@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/mail"
 
+	models "github.com/dwskme/seucy/backend-service/internal/models"
 	crypt "github.com/dwskme/seucy/backend-service/internal/utils/crypt"
 )
 
@@ -38,7 +39,10 @@ func (s *AuthService) MatchPassword(username, password string) (bool, error) {
 
 func (s *AuthService) ValidMailAddress(address string) (bool, string) {
 	_, err := mail.ParseAddress(address)
-	return err != nil, "Invalid Email"
+	if err != nil {
+		return false, "Invalid Email: " + err.Error()
+	}
+	return true, "Valid Email"
 }
 
 func (s *AuthService) ValidateStrongPassword(password string) {
@@ -49,6 +53,7 @@ func (s *AuthService) CheckeValidSignInRequest() {
 	// TODO:check if signin have non empty mail password ..
 }
 
-func (s *AuthService) CheckValidSignUpRequest() {
-	// TODO:check if email exist, email and passsword is not samepassword etc...
+func (s *AuthService) CheckValidSignUpRequest(user *models.User) bool {
+	// TODO:add other validaiton.
+	return user != nil && user.Email != "" && user.Username != "" && user.Password != "" && user.Firstname != "" && user.Lastname != ""
 }

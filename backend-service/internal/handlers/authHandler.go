@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dwskme/seucy/backend-service/internal/models"
+	models "github.com/dwskme/seucy/backend-service/internal/models"
 	services "github.com/dwskme/seucy/backend-service/internal/services"
 )
 
@@ -18,46 +18,57 @@ type AuthHandler struct {
 	AuthService  *services.AuthService
 }
 
+func jsonResponse(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	response := map[string]string{"message": message}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding JSON response", http.StatusInternalServerError)
+	}
+}
+
 func NewAuthHandler(userService *services.UserService, tokenService *services.TokenService, authService *services.AuthService) *AuthHandler {
 	return &AuthHandler{UserService: userService, TokenService: tokenService}
 }
 
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	// TODO: check if any token exists
-	token, _ := h.TokenService.ExtractTokenFromHeader(r.Header.Get("Authorization"))
-	_, _ = h.TokenService.ValidateToken(token)
+	token, err := h.TokenService.ExtractTokenFromHeader(r.Header.Get("Authorization"))
+	if err != nil {
+		jsonResponse(w, http.StatusInternalServerError, "Error extracting token")
+		return
+	}
+
+	_, err = h.TokenService.ValidateToken(token)
+	if err != nil {
+		jsonResponse(w, http.StatusUnauthorized, "Invalid or expired token")
+		return
+	}
 
 	var credentials Credentials
 	// Decode Input
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		jsonResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	// check if user exists
 	userExists, err := h.AuthService.CheckUserExists(credentials.Identifer)
 	if err != nil {
-		http.Error(w, "Error checking user existence", http.StatusInternalServerError)
+		jsonResponse(w, http.StatusInternalServerError, "Error checking user existence")
 		return
 	}
 	if !userExists {
-		http.Error(w, "User does not exist", http.StatusUnauthorized)
+		jsonResponse(w, http.StatusUnauthorized, "User does not exist")
 		return
 	}
 
-	passwordMatch, err := h.AuthService.MatchPassword(credentials.Identifer, credentials.Password)
+	_, err = h.AuthService.MatchPassword(credentials.Identifer, credentials.Password)
 	if err != nil {
-		http.Error(w, "Error checking password", http.StatusInternalServerError)
+		jsonResponse(w, http.StatusInternalServerError, "Error checking password")
 		return
 	}
-	if passwordMatch {
-		dummyToken := "dummy_access_token"
-		w.Header().Set("Content-Type", "application/json")
-		response := map[string]string{"access_token": dummyToken}
-		json.NewEncoder(w).Encode(response)
-	} else {
-		http.Error(w, "Incorrect password", http.StatusUnauthorized)
-	}
+
 	// TODO: renew the expiry token/ refresh token
 }
 
@@ -65,34 +76,55 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var user *models.User
 	// Decode Input
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		jsonResponse(w, http.StatusBadRequest, "Invalid request payload")
+		return
 	}
+
+	// check if valid signup request
+	validRequest := h.AuthService.CheckValidSignUpRequest(user)
+	if !validRequest {
+		jsonResponse(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
 	// check valid email or not
 	validEmail, msg := h.AuthService.ValidMailAddress(user.Email)
 	if !validEmail {
-		http.Error(w, msg, http.StatusBadRequest)
+		jsonResponse(w, http.StatusBadRequest, msg)
 		return
 	}
-	// TODO: validate if all data are filled or not
-	// check if user exists
+
+	// check if email already used
 	userExists, err := h.AuthService.CheckUserExists(user.Email)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-	}
-	if !userExists {
-		http.Error(w, "Email already exists", http.StatusBadRequest)
+		jsonResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	// check if username already exists
+	if userExists {
+		jsonResponse(w, http.StatusBadRequest, "Email already exists")
+		return
+	}
+
+	// check if username already used
 	userExists, err = h.AuthService.CheckUserExists(user.Username)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-	}
-	if !userExists {
-		http.Error(w, "Username already exists", http.StatusBadRequest)
+		jsonResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	// TODO: redirect to signin after successfull signup
+	if userExists {
+		jsonResponse(w, http.StatusBadRequest, "Username already exists")
+		return
+	}
+
+	// create new user in db
+	err = h.UserService.CreateUser(*user)
+	if err != nil {
+		jsonResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+
+	// Return success message with 201 Created status
+	jsonResponse(w, http.StatusCreated, "User created successfully")
 }
 
 func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {

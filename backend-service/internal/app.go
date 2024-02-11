@@ -18,7 +18,6 @@ func App() {
 		log.Fatal(err)
 	}
 	defer db.CloseDB()
-
 	// Initialize your services
 	authService := services.NewAuthService(dbInstance)
 	userService := services.NewUserService(dbInstance)
