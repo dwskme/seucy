@@ -7,6 +7,6 @@ import (
 )
 
 func AuthRoutes(h *h.AuthHandler) {
-	http.HandleFunc("/signup", h.SignIn)
+	http.HandleFunc("/signup", h.SignUp)
 	http.HandleFunc("/signin", h.SignIn)
 }
