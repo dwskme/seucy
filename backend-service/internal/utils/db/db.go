@@ -3,32 +3,30 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
-	"os"
 
 	_ "github.com/lib/pq"
 )
 
 var DB *sql.DB
 
-func InitDB() {
-	// TODO:Change connectionString to be dynamic
-	connectionString := "postgres://root:root@localhost:5432/seucydb?sslmode=disable"
-	var err error
-	DB, err = sql.Open("postgres", connectionString)
+func InitDB(connectionStr string) (*sql.DB, error) {
+	DB, err := sql.Open("postgres", connectionStr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
+
 	err = DB.Ping()
 	if err != nil {
-		fmt.Println("Failed to connect to the database:", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
+
 	fmt.Println("Successfully connected to the database!")
+
 	err = ensureTableExists()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to ensure table exists: %w", err)
 	}
+	return DB, nil
 }
 
 func CloseDB() {
@@ -39,15 +37,16 @@ func CloseDB() {
 
 func ensureTableExists() error {
 	query := `
-		CREATE TABLE IF NOT EXISTS users (
-			uuid VARCHAR(36) PRIMARY KEY,
-			firstname VARCHAR(255),
-			lastname VARCHAR(255),
-			email VARCHAR(255),
-			password VARCHAR(255),
-			role VARCHAR(50)
-		)
-	`
+        CREATE TABLE IF NOT EXISTS users (
+            uuid      VARCHAR(36) PRIMARY KEY,
+            firstname VARCHAR(255),
+            lastname  VARCHAR(255),
+            email     VARCHAR(255) UNIQUE,
+            username  VARCHAR(255) UNIQUE,
+            password  VARCHAR(255),
+            role      VARCHAR(20)
+        );
+    `
 	_, err := DB.Exec(query)
 	return err
 }

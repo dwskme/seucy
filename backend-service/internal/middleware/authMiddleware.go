@@ -2,13 +2,26 @@ package middleware
 
 import (
 	"net/http"
+
+	services "github.com/dwskme/seucy/backend-service/internal/services"
 )
 
-// AuthMiddleware is a middleware for JWT authentication.
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check JWT token in the request header and validate it using the JWT service
-		// If valid, set user information in the context and call the next handler
-		// If not valid, return an unauthorized response
-	})
+func AuthRequired(handler http.HandlerFunc, tokenService *services.TokenService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tokenString, err := tokenService.ExtractTokenFromHeader(r.Header.Get("Authorization"))
+		if err != nil || tokenString == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+
+		// Validate the token using your TokenService
+		valid, err := tokenService.ValidateToken(tokenString)
+		if err != nil || !valid {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		handler(w, r)
+	}
 }

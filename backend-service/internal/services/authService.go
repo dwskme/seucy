@@ -5,7 +5,6 @@ import (
 	"net/mail"
 
 	crypt "github.com/dwskme/seucy/backend-service/internal/utils/crypt"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
@@ -33,18 +32,8 @@ func (s *AuthService) MatchPassword(username, password string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	err = crypt.CheckPassword(password, hashedPassword)
-	switch err {
-	case nil:
-		// Passwords match
-		return true, nil
-	case bcrypt.ErrMismatchedHashAndPassword:
-		// Incorrect password
-		return false, nil
-	default:
-		// Other bcrypt-related errors
-		return false, err
-	}
+
+	return crypt.CheckPassword(password, hashedPassword) == nil, nil
 }
 
 func (s *AuthService) ValidMailAddress(address string) (bool, string) {

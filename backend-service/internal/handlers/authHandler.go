@@ -6,7 +6,6 @@ import (
 
 	"github.com/dwskme/seucy/backend-service/internal/models"
 	services "github.com/dwskme/seucy/backend-service/internal/services"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Credentials struct {
@@ -24,18 +23,19 @@ func NewAuthHandler(userService *services.UserService, tokenService *services.To
 }
 
 func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
+	// TODO: check if any token exists
+	token, _ := h.TokenService.ExtractTokenFromHeader(r.Header.Get("Authorization"))
+	_, _ = h.TokenService.ValidateToken(token)
+
 	var credentials Credentials
 	// Decode Input
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
 	}
-	// TODO: check if any token exists
 
 	// check if user exists
 	userExists, err := h.AuthService.CheckUserExists(credentials.Identifer)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-	}
 	if err != nil {
 		http.Error(w, "Error checking user existence", http.StatusInternalServerError)
 		return
@@ -44,21 +44,19 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User does not exist", http.StatusUnauthorized)
 		return
 	}
-	// check if user and password match
+
 	passwordMatch, err := h.AuthService.MatchPassword(credentials.Identifer, credentials.Password)
-	// TODO:things after passwordmatch
-	switch {
-	case err == nil && passwordMatch:
-		// Passwords match, user authenticated
+	if err != nil {
+		http.Error(w, "Error checking password", http.StatusInternalServerError)
+		return
+	}
+	if passwordMatch {
 		dummyToken := "dummy_access_token"
 		w.Header().Set("Content-Type", "application/json")
 		response := map[string]string{"access_token": dummyToken}
 		json.NewEncoder(w).Encode(response)
-	case err == bcrypt.ErrMismatchedHashAndPassword:
+	} else {
 		http.Error(w, "Incorrect password", http.StatusUnauthorized)
-	default:
-		// Other bcrypt-related errors or unexpected errors
-		http.Error(w, "Error checking password", http.StatusInternalServerError)
 	}
 	// TODO: renew the expiry token/ refresh token
 }
