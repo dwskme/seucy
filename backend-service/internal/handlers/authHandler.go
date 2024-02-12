@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	models "github.com/dwskme/seucy/backend-service/internal/models"
 	services "github.com/dwskme/seucy/backend-service/internal/services"
@@ -13,7 +14,7 @@ type Credentials struct {
 	Password   string `json:"password"`
 }
 
-type AuthHandler struct {
+type Handler struct {
 	UserService  *services.UserService
 	TokenService *services.TokenService
 	AuthService  *services.AuthService
@@ -28,11 +29,11 @@ func jsonResponse(w http.ResponseWriter, status int, message string) {
 	}
 }
 
-func NewAuthHandler(userService *services.UserService, tokenService *services.TokenService, authService *services.AuthService) *AuthHandler {
-	return &AuthHandler{UserService: userService, TokenService: tokenService}
+func NewAuthHandler(userService *services.UserService, tokenService *services.TokenService, authService *services.AuthService) *Handler {
+	return &Handler{UserService: userService, TokenService: tokenService}
 }
 
-func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	var credentials Credentials
 	// Decode Input
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -61,7 +62,7 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	// TODO: renew the expiry token/ refresh token
 }
 
-func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var user *models.User
 	// Decode Input
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -116,6 +117,12 @@ func (h *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusCreated, "User created successfully")
 }
 
-func (h *AuthHandler) SignOut(w http.ResponseWriter, r *http.Request) {
-	// TODO: clear token /sessions
+func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
+}
+
+func (h *Handler) SignOut(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Expires: time.Now(),
+	})
 }

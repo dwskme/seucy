@@ -3,35 +3,38 @@ package internal
 import (
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/dwskme/seucy/backend-service/internal/handlers"
-	"github.com/dwskme/seucy/backend-service/internal/routes"
-	"github.com/dwskme/seucy/backend-service/internal/services"
-	"github.com/dwskme/seucy/backend-service/internal/utils/db"
+	handlers "github.com/dwskme/seucy/backend-service/internal/handlers"
+	routes "github.com/dwskme/seucy/backend-service/internal/routes"
+	services "github.com/dwskme/seucy/backend-service/internal/services"
+	db "github.com/dwskme/seucy/backend-service/internal/utils/db"
 )
 
 func App() {
-	// TODO:Change connectionString to be dynamic
 	connectionStr := "postgres://root:root@localhost:5432/seucydb?sslmode=disable"
+	secretKey := []byte("sertyuiolkjdcbnm")
+
 	dbInstance, err := db.InitDB(connectionStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.CloseDB()
+
 	// Initialize your services
 	authService := services.NewAuthService(dbInstance)
 	userService := services.NewUserService(dbInstance)
-	tokenService := services.NewTokenService([]byte("sertyuiolkjdcbnm"))
-
-	// Initialize your handler
-	authHandler := &handlers.AuthHandler{
+	// Create an instance of TokenService
+	tokenService := services.NewTokenService(secretKey, 1*time.Minute)
+	handler := &handlers.Handler{
 		UserService:  userService,
 		TokenService: tokenService,
 		AuthService:  authService,
 	}
 
-	// Set up routes
-	routes.AuthRoutes(authHandler)
+	// Set up routes with middleware
+	routes.AuthRoutes(handler, tokenService)
+	routes.UserRoutes(handler, tokenService)
 
 	// Start your server
 	http.ListenAndServe(":8080", nil)
