@@ -71,3 +71,10 @@ func (s *TokenService) ValidateToken(tokenStr string) (*UserClaims, bool, error)
 
 	return nil, false, errors.New("token is invalid")
 }
+
+func (s *TokenService) ClearToken(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Expires: time.Now(),
+	})
+}

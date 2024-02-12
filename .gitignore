@@ -8,3 +8,4 @@ Makefile
 .air.toml
 */tmp
 
+*/node_modules/

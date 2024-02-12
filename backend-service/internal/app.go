@@ -13,7 +13,7 @@ import (
 
 func App() {
 	connectionStr := "postgres://root:root@localhost:5432/seucydb?sslmode=disable"
-	secretKey := []byte("sertyuiolkjdcbnm")
+	secretKey := []byte("thisistheverystupidsecret")
 
 	dbInstance, err := db.InitDB(connectionStr)
 	if err != nil {
@@ -24,9 +24,9 @@ func App() {
 	// Initialize your services
 	authService := services.NewAuthService(dbInstance)
 	userService := services.NewUserService(dbInstance)
-	// Create an instance of TokenService
 	tokenService := services.NewTokenService(secretKey, 1*time.Minute)
-	handler := &handlers.Handler{
+
+	handler := &handlers.NewHandler{
 		UserService:  userService,
 		TokenService: tokenService,
 		AuthService:  authService,
