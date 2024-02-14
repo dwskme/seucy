@@ -1,5 +1,6 @@
 package db
 
+// TODO: change form lib/pq to pgx
 import (
 	"database/sql"
 	"fmt"

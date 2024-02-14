@@ -16,13 +16,21 @@ type NewHandler struct {
 	UserService  *s.UserService
 	TokenService *s.TokenService
 	AuthService  *s.AuthService
+	MediaService *s.MediaService
 }
 
-func JsonResponse(w http.ResponseWriter, status int, message string) {
+func JsonResponse(w http.ResponseWriter, status int, message string, responseData interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	response := map[string]string{"message": message}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Error encoding JSON response", http.StatusInternalServerError)
+	if status != http.StatusNoContent {
+		w.WriteHeader(status)
+		response := map[string]interface{}{
+			"message": message,
+		}
+		response["data"] = responseData
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Error encoding JSON response", http.StatusInternalServerError)
+		}
+	} else {
+		w.WriteHeader(status)
 	}
 }

@@ -1,111 +1,82 @@
 package models
 
-import (
-	"time"
-)
+import "database/sql"
 
-type MediaType string
-
-const (
-	MovieType  MediaType = "Movie"
-	AnimeType  MediaType = "Anime"
-	MangaType  MediaType = "Manga"
-	ManhwaType MediaType = "Manhwa"
-	BookType   MediaType = "Book"
-	TVShowType MediaType = "TV Show"
-)
-
-type Rating struct {
-	Value float64
-}
-
-type Media struct {
-	ReleaseDate time.Time
-	ID          string
-	Title       string
-	Type        MediaType
-	Genre       []string
-}
-
+// TODO: Update table and model acc to change in requirements
 type Movie struct {
-	Director string
-	Media
-	BoxOffice   float64
-	IMDbRating  Rating
-	SeucyRating Rating
-	RunningTime int
+	ReleaseDate    sql.NullTime
+	Title          string
+	Genre          string
+	SecurityRating string
+	AverageRating  sql.NullFloat64
+	PersonalRating sql.NullFloat64
+	ID             int
+	RuntimeMinutes int
+	TMDBID         int
 }
 
 type Anime struct {
-	Studio      string
-	WatchStatus string
-	Media
-	Episodes    int
-	Seasons     int
-	IMDbRating  Rating
-	SeucyRating Rating
-}
-
-type Manga struct {
-	Author string
-	Media
-	Chapters    int
-	Volumes     int
-	IMDbRating  Rating
-	SeucyRating Rating
-	IsOngoing   bool
-}
-
-type Book struct {
-	Author    string
-	Publisher string
-	ISBN      string
-	Media
-	Pages       int
-	IMDbRating  Rating
-	SeucyRating Rating
+	ReleaseDate    sql.NullTime
+	Title          string
+	Genre          string
+	SecurityRating string
+	AverageRating  sql.NullFloat64
+	PersonalRating sql.NullFloat64
+	ID             int
+	EpisodeCount   int
+	TMDBID         int
 }
 
 type TVShow struct {
-	Network     string
-	WatchStatus string
-	Media
-	Seasons     int
-	Episodes    int
-	IMDbRating  Rating
-	SeucyRating Rating
+	ReleaseDate    sql.NullTime
+	Title          string
+	Genre          string
+	SecurityRating string
+	AverageRating  sql.NullFloat64
+	PersonalRating sql.NullFloat64
+	ID             int
+	EpisodeCount   int
+	TMDBID         int
 }
 
-func createDummyData() {
-	movie := Movie{
-		Media: Media{
-			ID:          "1",
-			Title:       "Inception",
-			ReleaseDate: time.Date(2010, time.July, 8, 0, 0, 0, 0, time.UTC),
-			Genre:       []string{"Sci-Fi", "Action", "Thriller"},
-			Type:        MovieType,
-		},
-		Director:    "Christopher Nolan",
-		BoxOffice:   829895144,
-		IMDbRating:  Rating{Value: 8.8},
-		SeucyRating: Rating{Value: 9.5},
-		RunningTime: 148,
-	}
-	anime := Anime{
-		Media: Media{
-			ID:          "2",
-			Title:       "One Punch Man",
-			ReleaseDate: time.Date(2015, time.October, 5, 0, 0, 0, 0, time.UTC),
-			Genre:       []string{"Action", "Comedy", "Superhero"},
-			Type:        AnimeType,
-		},
-		Episodes:    24,
-		Studio:      "Madhouse",
-		Seasons:     2,
-		WatchStatus: "Watching",
-		IMDbRating:  Rating{Value: 8.5},
-		SeucyRating: Rating{Value: 9.0},
-	}
-	_ = movie
-	_ = anime
+type Manga struct {
+	ReleaseDate    sql.NullTime
+	Title          string
+	Genre          string
+	SecurityRating string
+	AverageRating  sql.NullFloat64
+	PersonalRating sql.NullFloat64
+	ID             int
+	ChapterCount   int
+}
+
+type Manhua struct {
+	ReleaseDate    sql.NullTime
+	Title          string
+	Genre          string
+	SecurityRating string
+	AverageRating  sql.NullFloat64
+	PersonalRating sql.NullFloat64
+	ID             int
+	ChapterCount   int
+}
+
+type Book struct {
+	ReleaseDate    sql.NullTime
+	Title          string
+	Genre          string
+	BookType       string
+	SecurityRating string
+	AverageRating  sql.NullFloat64
+	PersonalRating sql.NullFloat64
+	ID             int
+}
+
+type UserPreference struct {
+	UserID           string `json:"userid"`
+	MediaID          string `json:"mediaid"`
+	Review           string `json:"review"`
+	MediaType        string `json:"mediatype"`
+	UserPreferenceID int    `json:"userpreferenceid"`
+	Rating           int    `json:"rating"`
 }

@@ -25,16 +25,19 @@ func App() {
 	authService := services.NewAuthService(dbInstance)
 	userService := services.NewUserService(dbInstance)
 	tokenService := services.NewTokenService(secretKey, 1*time.Minute)
+	mediaService := services.NewMediaService(dbInstance)
 
 	handler := &handlers.NewHandler{
 		UserService:  userService,
 		TokenService: tokenService,
 		AuthService:  authService,
+		MediaService: mediaService,
 	}
 
 	// Set up routes with middleware
 	routes.AuthRoutes(handler, tokenService)
 	routes.UserRoutes(handler, tokenService)
+	routes.MediaRoutes(handler)
 
 	// Start your server
 	http.ListenAndServe(":8080", nil)
